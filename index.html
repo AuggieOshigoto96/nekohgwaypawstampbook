@@ -264,20 +264,12 @@
 <body>
 
 <!-- ══════════════════════════════════════════════════════════════
-  🐾 CONFIGURATION — edit these two lines
+  🐾 CONFIGURATION — paste your Apps Script URL below
 ════════════════════════════════════════════════════════════════ -->
 <script>
-  // Your GitHub username and repo name
-  const GITHUB_OWNER = "AuggieOshigoto96";   // ← change this
-  const GITHUB_REPO  = "nekohgwaypawstampbook";          // ← change this
-
-  // A fine-grained PAT with "Contents: Read and Write" on this repo only.
-  // How to create: GitHub → Settings → Developer Settings →
-  //   Personal access tokens → Fine-grained → New token
-  //   Repository access: only this repo
-  //   Permissions → Contents → Read and Write
-  // Then paste the token below:
-  const GITHUB_TOKEN = "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";  // ← change this
+  // Paste your Google Apps Script Web App URL here.
+  // See README for setup instructions.
+  const APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE"; // ← change this
 
   // ── optional: your cat's paw image ──────────────────────────
   // URL, "/paw.png" (put it in the repo root), or base64 data URL.
@@ -334,7 +326,7 @@
     <input type="date" id="date-input"/>
     <p class="error-msg" id="error-msg" style="display:none"></p>
     <div class="upload-link-wrap">
-      <a href="https://drive.google.com/drive/folders/16RAaxWqDUCLCs4qr02XBlPfZE4NZb2mu" target="_blank" rel="noopener" class="upload-link">
+      <a href="YOUR_GOOGLE_DRIVE_LINK_HERE" target="_blank" rel="noopener" class="upload-link">
         📷 Share a photo with the cats!
       </a>
     </div>
@@ -350,7 +342,7 @@
   </div>
 </div>
 
-<p class="footer">Hover any paw to see who visited · stamps saved to GitHub</p>
+<p class="footer">Hover any paw to see who visited · stamps saved to Google Sheets</p>
 
 <script>
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -359,11 +351,9 @@ const PAW_COLORS = [
   "#f4d4a0","#a4c8e8","#e8c4a8","#c8a8e8","#a8e8d4",
 ];
 const SVG_W=960, SVG_H=580, MARGIN=30, MIN_DIST=36;
-const STAMPS_PATH = "stamps.json";
 
 // ─── state ────────────────────────────────────────────────────────────────────
 let stamps     = [];
-let fileSha    = null;   // GitHub file SHA — needed to update the file
 let submitting = false;
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
@@ -382,53 +372,25 @@ const successDate = document.getElementById("success-date");
 const againBtn    = document.getElementById("again-btn");
 const canvasWrap  = document.getElementById("canvas-wrap");
 
-// ─── GitHub API ───────────────────────────────────────────────────────────────
-const GH_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${STAMPS_PATH}`;
-const GH_HEADERS = {
-  "Authorization": `Bearer ${GITHUB_TOKEN}`,
-  "Accept": "application/vnd.github+json",
-  "X-GitHub-Api-Version": "2022-11-28",
-};
-
+// ─── Google Sheets API (via Apps Script) ─────────────────────────────────────
 async function fetchStamps() {
-  const res = await fetch(GH_API, { headers: GH_HEADERS });
-  if (!res.ok) {
-    const status = res.status;
-    if (status === 401) throw new Error("401: Bad token — check GITHUB_TOKEN.");
-    if (status === 403) throw new Error("403: Forbidden — token lacks read permission.");
-    if (status === 404) throw new Error("404: Not found — check GITHUB_OWNER, GITHUB_REPO, and that stamps.json exists.");
-    throw new Error(`Fetch failed: ${status}`);
-  }
-  const meta = await res.json();
-  fileSha = meta.sha;
-  const json = atob(meta.content.replace(/\n/g,""));
-  return JSON.parse(json);
+  const res = await fetch(APPS_SCRIPT_URL + "?action=get");
+  if (!res.ok) throw new Error(`Failed to load stamps (${res.status})`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.stamps || [];
 }
 
-async function saveStamps(updatedStamps) {
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(updatedStamps, null, 2))));
-  const res = await fetch(GH_API, {
-    method: "PUT",
-    headers: { ...GH_HEADERS, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: `🐾 ${updatedStamps.at(-1).name} left a paw stamp`,
-      content,
-      sha: fileSha,
-    }),
+async function saveStamp(stamp) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" }, // avoid CORS preflight
+    body: JSON.stringify({ action: "add", stamp }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(()=>({}));
-    const status = res.status;
-    // Surface a clear message per status code
-    if (status === 401) throw new Error("401: Bad token — check GITHUB_TOKEN is correct and not expired.");
-    if (status === 403) throw new Error("403: Forbidden — token lacks Contents: Write permission, or repo is wrong.");
-    if (status === 404) throw new Error("404: stamps.json not found — check GITHUB_OWNER, GITHUB_REPO, and that stamps.json exists in the repo root.");
-    if (status === 409) throw new Error("409: Conflict — someone else stamped at the same time. Try again.");
-    if (status === 422) throw new Error("422: SHA mismatch — reload the page and try again.");
-    throw new Error(`${status}: ${err.message || "Unknown GitHub API error"}`);
-  }
+  if (!res.ok) throw new Error(`Failed to save stamp (${res.status})`);
   const data = await res.json();
-  fileSha = data.content.sha;
+  if (data.error) throw new Error(data.error);
+  return data.stamp;
 }
 
 // ─── positioning ─────────────────────────────────────────────────────────────
@@ -593,7 +555,7 @@ async function doStamp() {
     const newStamp = {id, name, date, x, y, rotation, color};
     const updated = [...stamps, newStamp];
 
-    await saveStamps(updated);
+    // saved above via saveStamp()
     stamps = updated;
 
     renderAll(stamps);
@@ -648,7 +610,7 @@ againBtn.addEventListener("click", ()=>{
     stamps = await fetchStamps();
     renderAll(stamps);
   } catch (e) {
-    emptyText.textContent = `Load error: ${e.message}`;
+    emptyText.textContent = `Load error: ${e.message} — check APPS_SCRIPT_URL`;
     console.error(e);
   }
 })();
