@@ -269,7 +269,7 @@
 <script>
   // Paste your Google Apps Script Web App URL here.
   // See README for setup instructions.
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBF_-q704OI3G25WJKfErOtjjYE0y2kfgdWWirwT81adZ53p3JPRVcpQEkVfkzxNv8Q/exec"; // ← change this
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwlZZq3sx26FRImdeTtiU6XHFc7UWcHrovxj0hIxYHPLYC7BblVoGaaoBrDJ7Oqs22/exec"; // ← change this
 
   // ── optional: your cat's paw image ──────────────────────────
   // URL, "/paw.png" (put it in the repo root), or base64 data URL.
@@ -342,7 +342,7 @@
   </div>
 </div>
 
-<p class="footer">Welcome to NeKohGway Cafe · Please leave your traces behind after every visit  🐾 </p>
+<p class="footer">Hover any paw to see who visited · stamps saved to Google Sheets</p>
 
 <script>
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -382,11 +382,10 @@ async function fetchStamps() {
 }
 
 async function saveStamp(stamp) {
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" }, // avoid CORS preflight
-    body: JSON.stringify({ action: "add", stamp }),
-  });
+  // Use GET to avoid CORS preflight issues with Apps Script
+  const encoded = encodeURIComponent(JSON.stringify(stamp));
+  const url = APPS_SCRIPT_URL + "?action=add&stamp=" + encoded;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to save stamp (${res.status})`);
   const data = await res.json();
   if (data.error) throw new Error(data.error);
