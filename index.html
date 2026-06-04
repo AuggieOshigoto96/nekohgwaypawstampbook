@@ -1,4 +1,3 @@
-<!-- v3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -270,7 +269,7 @@
 <script>
   // Paste your Google Apps Script Web App URL here.
   // See README for setup instructions.
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwlZZq3sx26FRImdeTtiU6XHFc7UWcHrovxj0hIxYHPLYC7BblVoGaaoBrDJ7Oqs22/exec"; // ← change this
+  const APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE"; // ← change this
 
   // ── optional: your cat's paw image ──────────────────────────
   // URL, "/paw.png" (put it in the repo root), or base64 data URL.
@@ -553,10 +552,10 @@ async function doStamp() {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 
     const newStamp = {id, name, date, x, y, rotation, color};
-    const updated = [...stamps, newStamp];
 
-    // saved above via saveStamp()
-    stamps = updated;
+    // Save to Google Sheets
+    await saveStamp(newStamp);
+    stamps = [...stamps, newStamp];
 
     renderAll(stamps);
     renderPaw(newStamp, stamps.length-1, true);  // re-render with animation
