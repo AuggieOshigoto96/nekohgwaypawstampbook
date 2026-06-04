@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NeKohGway Paw's Book 🐾</title>
+  <meta property="og:title" content="NeKohGway Paw's Book 🐾"/>
+  <meta property="og:description" content="Leave your paw mark!"/>
+  <style>
+    /* ── reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e0a14;
+      --surface:   rgba(255,255,255,0.04);
+      --border:    rgba(255,255,255,0.10);
+      --pink:      #e8a4c8;
+      --lavender:  #d4a8e8;
+      --text:      #f0e6ff;
+      --muted:     rgba(240,230,255,0.55);
+      --error:     rgba(255,110,110,0.85);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ambient glow */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(232,164,200,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(168,212,232,0.06) 0%, transparent 60%);
+    }
+
+    /* ── layout ── */
+    .header { text-align: center; margin-bottom: 28px; position: relative; z-index: 2; }
+    .header .icon { font-size: 36px; margin-bottom: 6px; }
+    .header h1 {
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .header p {
+      margin-top: 8px;
+      font-size: 13px;
+      color: rgba(232,164,200,0.7);
+      letter-spacing: 0.08em;
+      font-style: italic;
+    }
+
+    /* ── canvas ── */
+    .canvas-wrap {
+      position: relative;
+      width: min(960px, 95vw);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #1a1008;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.6);
+      z-index: 2;
+    }
+    .canvas-wrap svg { display: block; width: 100%; height: auto; }
+
+    /* paper grain overlay on top of photo */
+    .canvas-wrap::after {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='1' cy='1' r='.5' fill='%23ffffff' opacity='.03'/%3E%3C/svg%3E");
+    }
+
+    /* stamp flash */
+    .flash {
+      position: absolute; inset: 0;
+      background: rgba(232,164,200,0.14);
+      pointer-events: none;
+      animation: flash 0.5s ease-out forwards;
+    }
+    @keyframes flash { from{opacity:1} to{opacity:0} }
+
+    /* paw entry */
+    .paw-group {
+      cursor: pointer;
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    /* ── sign-in panel ── */
+    .panel {
+      width: min(400px, 95vw);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      z-index: 2;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    .panel p.hint {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+    .row { display: flex; gap: 10px; }
+
+    input[type=text] {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s;
+    }
+    input[type=text]:focus    { border-color: rgba(232,164,200,0.45); }
+    input[type=text]::placeholder { color: rgba(240,230,255,0.3); }
+    input[type=text]:disabled { opacity: 0.5; }
+
+    input[type=date] {
+      width: 100%;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s;
+      margin-top: 10px;
+      cursor: pointer;
+      color-scheme: dark;
+    }
+    input[type=date]:focus { border-color: rgba(232,164,200,0.45); }
+    input[type=date]:disabled { opacity: 0.5; }
+    .date-label {
+      font-size: 11px;
+      color: rgba(240,230,255,0.35);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 10px;
+      margin-bottom: 3px;
+      display: block;
+    }
+
+    button.stamp-btn {
+      background: linear-gradient(135deg, var(--pink), var(--lavender));
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      min-width: 48px;
+      color: #1a0f2e;
+      font-size: 18px;
+      cursor: pointer;
+      transition: filter 0.2s, transform 0.1s;
+    }
+    button.stamp-btn:disabled {
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.3);
+      cursor: not-allowed;
+    }
+    button.stamp-btn:not(:disabled):hover { filter: brightness(1.12); }
+    button.stamp-btn:not(:disabled):active { transform: scale(0.96); }
+
+    .upload-link-wrap {
+      margin-top: 14px;
+      text-align: center;
+    }
+    .upload-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: rgba(232,164,200,0.75);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      border: 1px solid rgba(232,164,200,0.25);
+      border-radius: 20px;
+      padding: 6px 16px;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      font-family: inherit;
+    }
+    .upload-link:hover {
+      color: rgba(232,164,200,1);
+      border-color: rgba(232,164,200,0.6);
+      background: rgba(232,164,200,0.08);
+    }
+
+    .error-msg {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--error);
+      text-align: center;
+    }
+
+    /* success state */
+    .success { text-align: center; }
+    .success .big  { font-size: 28px; margin-bottom: 8px; }
+    .success .name { font-size: 15px; font-style: italic; margin-bottom: 4px; }
+    .success .date { font-size: 12px; color: rgba(232,164,200,0.6); letter-spacing: 0.06em; margin-bottom: 16px; }
+    button.again-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 7px 16px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    button.again-btn:hover { border-color: rgba(255,255,255,0.4); }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.18);
+      letter-spacing: 0.08em;
+      font-style: italic;
+      z-index: 2;
+    }
+
+    /* tooltip */
+    .tooltip-box {
+      background: rgba(20,15,25,0.93);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 10px;
+      color: #f0e6ff;
+      text-align: center;
+      line-height: 1.4;
+      pointer-events: none;
+      font-family: 'Courier New', monospace;
+      white-space: nowrap;
+    }
+    .tooltip-name { font-weight: bold; }
+    .tooltip-date { opacity: 0.65; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+  🐾 CONFIGURATION — edit these two lines
+════════════════════════════════════════════════════════════════ -->
+<script>
+  // Your GitHub username and repo name
+  const GITHUB_OWNER = "YOUR_GITHUB_USERNAME";   // ← change this
+  const GITHUB_REPO  = "YOUR_REPO_NAME";          // ← change this
+
+  // A fine-grained PAT with "Contents: Read and Write" on this repo only.
+  // How to create: GitHub → Settings → Developer Settings →
+  //   Personal access tokens → Fine-grained → New token
+  //   Repository access: only this repo
+  //   Permissions → Contents → Read and Write
+  // Then paste the token below:
+  const GITHUB_TOKEN = "github_pat_REPLACE_ME";  // ← change this
+
+  // ── optional: your cat's paw image ──────────────────────────
+  // URL, "/paw.png" (put it in the repo root), or base64 data URL.
+  // null = use the built-in SVG paw.
+  const CUSTOM_PAW_IMAGE = null;
+</script>
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<div class="header">
+  <div class="icon">🐾</div>
+  <h1>NeKohGway Paw's Book</h1>
+  <p id="count-label">Leave your mark · 0 paws stamped</p>
+</div>
+
+<div class="canvas-wrap" id="canvas-wrap">
+  <svg id="paw-svg" viewBox="0 0 960 580">
+    <!-- cat photo background — scaled to fill width, shifted up to show faces -->
+    <image href="cats.jpg" x="0" y="-222" width="960" height="1280"
+      preserveAspectRatio="none"/>
+    <!-- dark + warm vignette so stamps stay readable -->
+    <rect x="0" y="0" width="960" height="580" fill="rgba(14,8,18,0.52)"/>
+    <radialGradient id="vig" cx="50%" cy="50%" r="70%">
+      <stop offset="0%"   stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(10,6,16,0.55)"/>
+    </radialGradient>
+    <rect x="0" y="0" width="960" height="580" fill="url(#vig)"/>
+
+    <!-- corner decorations -->
+    <g transform="translate(20,20)   rotate(0)"   opacity=".25"><path d="M0,0 L20,0 M0,0 L0,20" stroke="#e8a4c8" stroke-width="1.5" fill="none"/></g>
+    <g transform="translate(940,20)  rotate(90)"  opacity=".25"><path d="M0,0 L20,0 M0,0 L0,20" stroke="#e8a4c8" stroke-width="1.5" fill="none"/></g>
+    <g transform="translate(940,560) rotate(180)" opacity=".25"><path d="M0,0 L20,0 M0,0 L0,20" stroke="#e8a4c8" stroke-width="1.5" fill="none"/></g>
+    <g transform="translate(20,560)  rotate(270)" opacity=".25"><path d="M0,0 L20,0 M0,0 L0,20" stroke="#e8a4c8" stroke-width="1.5" fill="none"/></g>
+
+    <g id="splatters"></g>
+    <g id="paws"></g>
+
+    <text id="empty-text" x="480" y="290" text-anchor="middle"
+      fill="rgba(255,255,255,0.55)" font-size="14"
+      font-family="Georgia,serif" font-style="italic"
+      filter="drop-shadow(0 1px 3px rgba(0,0,0,0.8))">
+      Loading paws…
+    </text>
+  </svg>
+</div>
+
+<div class="panel" id="panel">
+  <div id="signin-view">
+    <p class="hint">Sign your name and stamp your paw</p>
+    <div class="row">
+      <input type="text" id="name-input" placeholder="Your name…" maxlength="24"/>
+      <button class="stamp-btn" id="stamp-btn" disabled>🐾</button>
+    </div>
+    <span class="date-label">Date of visit</span>
+    <input type="date" id="date-input"/>
+    <p class="error-msg" id="error-msg" style="display:none"></p>
+    <div class="upload-link-wrap">
+      <a href="YOUR_GOOGLE_DRIVE_LINK_HERE" target="_blank" rel="noopener" class="upload-link">
+        📷 Share a photo with the cats!
+      </a>
+    </div>
+  </div>
+
+  <div id="success-view" style="display:none">
+    <div class="success">
+      <div class="big">🐾</div>
+      <p class="name" id="success-name"></p>
+      <p class="date" id="success-date"></p>
+      <button class="again-btn" id="again-btn">Stamp another</button>
+    </div>
+  </div>
+</div>
+
+<p class="footer">Hover any paw to see who visited · stamps saved to GitHub</p>
+
+<script>
+// ─── constants ────────────────────────────────────────────────────────────────
+const PAW_COLORS = [
+  "#e8a4c8","#f4b8a0","#a8d4e8","#b8e8a4","#d4a8e8",
+  "#f4d4a0","#a4c8e8","#e8c4a8","#c8a8e8","#a8e8d4",
+];
+const SVG_W=960, SVG_H=580, MARGIN=30, MIN_DIST=36;
+const STAMPS_PATH = "stamps.json";
+
+// ─── state ────────────────────────────────────────────────────────────────────
+let stamps     = [];
+let fileSha    = null;   // GitHub file SHA — needed to update the file
+let submitting = false;
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const pawsSvg     = document.getElementById("paws");
+const splatSvg    = document.getElementById("splatters");
+const emptyText   = document.getElementById("empty-text");
+const countLabel  = document.getElementById("count-label");
+const nameInput   = document.getElementById("name-input");
+const stampBtn    = document.getElementById("stamp-btn");
+const errorMsg    = document.getElementById("error-msg");
+const dateInput   = document.getElementById("date-input");
+const signinView  = document.getElementById("signin-view");
+const successView = document.getElementById("success-view");
+const successName = document.getElementById("success-name");
+const successDate = document.getElementById("success-date");
+const againBtn    = document.getElementById("again-btn");
+const canvasWrap  = document.getElementById("canvas-wrap");
+
+// ─── GitHub API ───────────────────────────────────────────────────────────────
+const GH_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${STAMPS_PATH}`;
+const GH_HEADERS = {
+  "Authorization": `Bearer ${GITHUB_TOKEN}`,
+  "Accept": "application/vnd.github+json",
+  "X-GitHub-Api-Version": "2022-11-28",
+};
+
+async function fetchStamps() {
+  const res = await fetch(GH_API, { headers: GH_HEADERS });
+  if (!res.ok) {
+    const status = res.status;
+    if (status === 401) throw new Error("401: Bad token — check GITHUB_TOKEN.");
+    if (status === 403) throw new Error("403: Forbidden — token lacks read permission.");
+    if (status === 404) throw new Error("404: Not found — check GITHUB_OWNER, GITHUB_REPO, and that stamps.json exists.");
+    throw new Error(`Fetch failed: ${status}`);
+  }
+  const meta = await res.json();
+  fileSha = meta.sha;
+  const json = atob(meta.content.replace(/\n/g,""));
+  return JSON.parse(json);
+}
+
+async function saveStamps(updatedStamps) {
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(updatedStamps, null, 2))));
+  const res = await fetch(GH_API, {
+    method: "PUT",
+    headers: { ...GH_HEADERS, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `🐾 ${updatedStamps.at(-1).name} left a paw stamp`,
+      content,
+      sha: fileSha,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    const status = res.status;
+    // Surface a clear message per status code
+    if (status === 401) throw new Error("401: Bad token — check GITHUB_TOKEN is correct and not expired.");
+    if (status === 403) throw new Error("403: Forbidden — token lacks Contents: Write permission, or repo is wrong.");
+    if (status === 404) throw new Error("404: stamps.json not found — check GITHUB_OWNER, GITHUB_REPO, and that stamps.json exists in the repo root.");
+    if (status === 409) throw new Error("409: Conflict — someone else stamped at the same time. Try again.");
+    if (status === 422) throw new Error("422: SHA mismatch — reload the page and try again.");
+    throw new Error(`${status}: ${err.message || "Unknown GitHub API error"}`);
+  }
+  const data = await res.json();
+  fileSha = data.content.sha;
+}
+
+// ─── positioning ─────────────────────────────────────────────────────────────
+function findPos(existing) {
+  for (let i=0; i<60; i++) {
+    const x = MARGIN + Math.random()*(SVG_W - MARGIN*2);
+    const y = MARGIN + Math.random()*(SVG_H - MARGIN*2);
+    const ok = !existing.some(v => Math.hypot(v.x-x, v.y-y) < MIN_DIST);
+    if (ok) return {x, y};
+  }
+  return { x: MARGIN+Math.random()*(SVG_W-MARGIN*2), y: MARGIN+Math.random()*(SVG_H-MARGIN*2) };
+}
+
+// ─── SVG helpers ─────────────────────────────────────────────────────────────
+const SVG_NS = "http://www.w3.org/2000/svg";
+const XHTML_NS = "http://www.w3.org/1999/xhtml";
+
+function svgEl(tag, attrs={}) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+  return el;
+}
+
+function makeSvgPaw(color) {
+  const g = svgEl("g");
+  const defs = [
+    ["ellipse",{cx:0,  cy:8,   rx:14,  ry:12,  fill:color, opacity:0.9}],
+    ["ellipse",{cx:-9, cy:-4,  rx:6,   ry:5,   fill:color, opacity:0.9}],
+    ["ellipse",{cx:-3, cy:-10, rx:5.5, ry:5,   fill:color, opacity:0.9}],
+    ["ellipse",{cx:4,  cy:-10, rx:5.5, ry:5,   fill:color, opacity:0.9}],
+    ["ellipse",{cx:10, cy:-4,  rx:5.5, ry:5,   fill:color, opacity:0.9}],
+    ["ellipse",{cx:0,  cy:8,   rx:9,   ry:7.5, fill:color, opacity:0.5}],
+  ];
+  defs.forEach(([tag,a])=> g.appendChild(svgEl(tag,a)));
+  return g;
+}
+
+function makeTooltip(name, date, color) {
+  const fo = svgEl("foreignObject", {x:-65, y:-60, width:130, height:46});
+  const div = document.createElementNS(XHTML_NS,"div");
+  div.setAttribute("xmlns", XHTML_NS);
+  div.className = "tooltip-box";
+  div.innerHTML = `<div class="tooltip-name" style="color:${color}">${escHtml(name)}</div><div class="tooltip-date">${escHtml(date)}</div>`;
+  fo.appendChild(div);
+  return fo;
+}
+
+function makeSplatter(x, y, color) {
+  const g = svgEl("g", {transform:`translate(${x},${y})`, opacity:0.15});
+  for (let i=0; i<6; i++) {
+    const a = (i/6)*Math.PI*2;
+    const c = svgEl("circle",{
+      cx: Math.cos(a)*(8+Math.random()*6),
+      cy: Math.sin(a)*(8+Math.random()*6),
+      r:  3+Math.random()*5,
+      fill: color,
+    });
+    g.appendChild(c);
+  }
+  return g;
+}
+
+function renderPaw(stamp, index, isNew=false) {
+  const {x, y, rotation, color, name, date} = stamp;
+  const g = svgEl("g");
+  g.className.baseVal = "paw-group";
+  g.setAttribute("transform", `translate(${x},${y}) rotate(${rotation})`);
+  g.style.opacity = "0";
+  g.style.transform = `translate(${x}px,${y}px) rotate(${rotation}deg) scale(0.3)`;
+
+  if (CUSTOM_PAW_IMAGE) {
+    const img = svgEl("image",{href:CUSTOM_PAW_IMAGE, x:-24, y:-24, width:48, height:48});
+    img.style.filter = "drop-shadow(0 2px 6px rgba(0,0,0,0.5))";
+    g.appendChild(img);
+  } else {
+    g.appendChild(makeSvgPaw(color));
+  }
+
+  // tooltip on hover
+  let tip = null;
+  g.addEventListener("mouseenter", ()=>{
+    tip = makeTooltip(name, date, CUSTOM_PAW_IMAGE ? "#e8a4c8" : color);
+    g.appendChild(tip);
+  });
+  g.addEventListener("mouseleave", ()=>{ if(tip){ g.removeChild(tip); tip=null; } });
+
+  pawsSvg.appendChild(g);
+
+  // animate in
+  const delay = isNew ? 80 : index * 60;
+  setTimeout(()=>{
+    g.style.transition = isNew
+      ? "opacity .3s ease, transform .4s cubic-bezier(.34,1.56,.64,1)"
+      : `opacity .4s ease`;
+    g.style.opacity = "1";
+    g.style.transform = `translate(${x}px,${y}px) rotate(${rotation}deg) scale(1)`;
+  }, delay);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ─── render all stamps ───────────────────────────────────────────────────────
+function renderAll(data) {
+  pawsSvg.innerHTML = "";
+  splatSvg.innerHTML = "";
+  emptyText.textContent = data.length === 0 ? "No paws yet — be the first to leave a mark" : "";
+  countLabel.textContent = `Leave your mark · ${data.length} paw${data.length!==1?"s":""} stamped`;
+  data.forEach((s,i) => {
+    renderPaw(s, i, false);
+    if (i < 8) splatSvg.appendChild(makeSplatter(s.x, s.y, s.color));
+  });
+}
+
+// ─── stamp flash effect ──────────────────────────────────────────────────────
+function flashCanvas() {
+  const d = document.createElement("div");
+  d.className = "flash";
+  canvasWrap.appendChild(d);
+  setTimeout(()=> canvasWrap.removeChild(d), 600);
+}
+
+// ─── show / hide error ───────────────────────────────────────────────────────
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = "block";
+}
+function clearError() { errorMsg.style.display = "none"; }
+
+// ─── update stamp button state ───────────────────────────────────────────────
+function syncBtn() {
+  const ok = nameInput.value.trim().length > 0 && !submitting;
+  stampBtn.disabled = !ok;
+  stampBtn.textContent = submitting ? "…" : "🐾";
+}
+nameInput.addEventListener("input", syncBtn);
+
+// ─── submit ──────────────────────────────────────────────────────────────────
+async function doStamp() {
+  const name = nameInput.value.trim();
+  if (!name || submitting) return;
+  submitting = true;
+  clearError();
+  syncBtn();
+  nameInput.disabled = true;
+  dateInput.disabled = true;
+
+  try {
+    // Always re-fetch to get latest SHA and avoid conflicts
+    stamps = await fetchStamps();
+
+    const {x, y} = findPos(stamps);
+    const rotation = -25 + Math.random()*50;
+    const color = PAW_COLORS[Math.floor(Math.random()*PAW_COLORS.length)];
+    // Use picker date if set, otherwise today
+    const pickedVal = dateInput.value;
+    const dateObj = pickedVal ? new Date(pickedVal + "T00:00:00") : new Date();
+    const date = dateObj.toLocaleDateString("en-SG", {day:"2-digit", month:"short", year:"numeric"});
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+
+    const newStamp = {id, name, date, x, y, rotation, color};
+    const updated = [...stamps, newStamp];
+
+    await saveStamps(updated);
+    stamps = updated;
+
+    renderAll(stamps);
+    renderPaw(newStamp, stamps.length-1, true);  // re-render with animation
+    flashCanvas();
+
+    successName.textContent = `Paw stamped, ${name}!`;
+    successDate.textContent = `${date} · hover your paw to see it`;
+    signinView.style.display = "none";
+    successView.style.display = "block";
+
+  } catch (err) {
+    console.error(err);
+    showError(err.message);
+  } finally {
+    submitting = false;
+    nameInput.disabled = false;
+    dateInput.disabled = false;
+    syncBtn();
+  }
+}
+
+stampBtn.addEventListener("click", doStamp);
+nameInput.addEventListener("keydown", e => { if (e.key==="Enter") doStamp(); });
+
+againBtn.addEventListener("click", ()=>{
+  successView.style.display = "none";
+  signinView.style.display  = "block";
+  nameInput.value = "";
+  // reset date to today
+  const t = new Date();
+  const yyyy = t.getFullYear();
+  const mm = String(t.getMonth()+1).padStart(2,'0');
+  const dd = String(t.getDate()).padStart(2,'0');
+  dateInput.value = `${yyyy}-${mm}-${dd}`;
+  syncBtn();
+});
+
+// ─── init ─────────────────────────────────────────────────────────────────────
+// Default date picker to today
+(function() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  dateInput.value = `${yyyy}-${mm}-${dd}`;
+  dateInput.max = `${yyyy}-${mm}-${dd}`;  // can't stamp future dates
+})();
+
+(async ()=>{
+  try {
+    stamps = await fetchStamps();
+    renderAll(stamps);
+  } catch (e) {
+    emptyText.textContent = `Load error: ${e.message}`;
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
